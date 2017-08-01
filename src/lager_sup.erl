@@ -46,9 +46,11 @@ init([]) ->
             permanent, 5000, supervisor, [lager_handler_watcher_sup]}],
 
     CrashLog = decide_crash_log(lager_app:get_env(lager, crash_log, false)),
+    EventWatcher = decide_event_watcher(
+                     lager_app:get_env(lager, event_watcher, true)),
 
     {ok, {{one_for_one, 10, 60},
-          Children ++ CrashLog
+          Children ++ CrashLog ++ EventWatcher
          }}.
 
 validate_positive({ok, Val}, _Default) when is_integer(Val) andalso Val >= 0 ->
@@ -84,3 +86,19 @@ decide_crash_log(File) ->
     [{lager_crash_log, {lager_crash_log, start_link, [File, MaxBytes,
                                                       RotationSize, RotationDate, RotationCount]},
       permanent, 5000, worker, [lager_crash_log]}].
+
+decide_event_watcher(false) ->
+    [];
+decide_event_watcher(true) ->
+    Threshold = validate_positive(
+                  application:get_env(lager, event_watcher_threshold), 1000),
+    Interval = validate_positive(
+                 application:get_env(lager, event_watcher_interval), 1000),
+    MarksLen = validate_positive(
+                 application:get_env(lager, event_watcher_max_over_cnt), 3),
+    RebootAfter = validate_positive(
+                    application:get_env(lager, event_watcher_reboot_after), 5000),
+
+    [{lager_event_watcher, {lager_event_watcher, start_link,
+                            [Threshold, Interval, MarksLen, RebootAfter]},
+      permanent, 5000, worker, [lager_event_watcher]}].

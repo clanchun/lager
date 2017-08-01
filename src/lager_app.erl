@@ -31,11 +31,14 @@
          start_handler/3,
          configure_sink/2,
          stop/1,
-         boot/1]).
+         boot/1,
+         clean_up_config_checks/0
+        ]).
 
 %% The `application:get_env/3` compatibility wrapper is useful
 %% for other modules
 -export([get_env/3]).
+
 
 -define(FILENAMES, '__lager_file_backend_filenames').
 -define(THROTTLE, lager_backend_throttle).
